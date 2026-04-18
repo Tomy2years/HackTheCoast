@@ -20,18 +20,16 @@ export default function App() {
     }
   };
 
-  const isChat = activeTab === 'chat';
-
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isChat ? 'bg-neutral-950 text-white' : 'bg-blue-50 text-neutral-900'} selection:bg-blue-500/50 overflow-hidden`}>
-      <div className="relative z-10 flex h-screen">
+    <div class="min-h-screen bg-neutral-950 text-white selection:bg-blue-500/50">
+      <div className="relative z-10 flex">
         <Navigation 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
         />
         
-        <main className={`flex-1 transition-all duration-300 ${isChat ? 'h-screen' : 'overflow-y-auto'}`}>
-          <div className={`${isChat ? 'h-full' : 'max-w-6xl mx-auto p-12 pl-72'}`}>
+        <main className="flex-1 transition-all duration-300">
+          <div className="max-w-6xl mx-auto p-12 pl-72">
             {renderTab()}
           </div>
         </main>

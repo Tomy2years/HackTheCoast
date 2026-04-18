@@ -24,7 +24,7 @@ export default function ChatView() {
   };
 
   return (
-    <div className="flex flex-col h-screen animate-in fade-in duration-500 pl-64">
+    <div className="flex flex-col h-[calc(100vh-6rem)] animate-in fade-in duration-500">
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
         
         {messages.length === 0 ? (
