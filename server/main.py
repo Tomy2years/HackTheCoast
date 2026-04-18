@@ -1,24 +1,38 @@
 import os
 import re
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
 
 import canvas_api
-
-# LangChain imports
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import PromptTemplate
+import sync
+import rag
+from database import SessionLocal, Course, Assignment, Announcement, SyncMeta, init_db
 
 load_dotenv()
 
-app = FastAPI()
+# Startup sync logic
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables if they don't exist
+    init_db()
+    # Trigger an initial sync in the background
+    try:
+        sync.sync_all()
+    except Exception as e:
+        print(f"⚠️  Canvas sync failed on startup: {e}")
+        print("   The app will serve whatever is already cached.")
+    yield
 
-# Enable CORS for the frontend (Vite dev server usually runs on 5173)
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,16 +41,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Gemini LLM
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-if not gemini_api_key:
-    print("Warning: GEMINI_API_KEY not found in .env. AI features will fail.")
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    google_api_key=gemini_api_key,
-    temperature=0.2
-)
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def clean_html(html_content: str) -> str:
     if not html_content:
@@ -44,70 +55,33 @@ def clean_html(html_content: str) -> str:
     soup = BeautifulSoup(html_content, "html.parser")
     return soup.get_text(separator="\n").strip()
 
-def _clean_course_code(raw_code: str) -> str:
-    """Turn '202630_MATH4A_31264' into 'MATH 4A' or return as-is for non-standard codes."""
-    m = re.match(r"^\d+_([A-Z]+)(\d+\w*)_\d+$", raw_code or "")
-    if m:
-        dept, num = m.group(1), m.group(2)
-        return f"{dept} {num}"
-    return raw_code or ""
-
-
-def _next_assignment(course_id):
-    """Get the next upcoming assignment for a course."""
-    try:
-        assignments = canvas_api.fetch_assignments(course_id)
-        now = datetime.now(timezone.utc)
-        upcoming = []
-        for a in assignments:
-            due = a.get("due_at")
-            if due:
-                try:
-                    dt = datetime.fromisoformat(due.replace("Z", "+00:00"))
-                    if dt > now:
-                        upcoming.append((dt, a))
-                except ValueError:
-                    pass
-        if upcoming:
-            upcoming.sort(key=lambda x: x[0])
-            dt, a = upcoming[0]
-            return {"name": a.get("name", ""), "due_at": a.get("due_at"), "points": a.get("points_possible")}
-    except Exception:
-        pass
-    return None
-
-
 @app.get("/api/courses")
-def get_courses():
+def get_courses(db: Session = Depends(get_db)):
     try:
-        courses = canvas_api.fetch_courses_rich()
+        courses = db.query(Course).all()
         results = []
         for c in courses:
-            if "id" not in c:
-                continue
-            # Extract grade from enrollments
-            enrollments = c.get("enrollments", [])
-            grade = None
-            if enrollments:
-                grade = enrollments[0].get("computed_current_score")
-                if grade is None:
-                    grades_obj = enrollments[0].get("grades", {})
-                    if grades_obj:
-                        grade = grades_obj.get("current_score")
-            
-            code = _clean_course_code(c.get("course_code", ""))
-            term = c.get("term", {})
-            term_name = term.get("name", "") if term else ""
+            # Get next upcoming assignment for this course from DB
+            now = datetime.utcnow()
+            next_asgn_obj = db.query(Assignment).filter(
+                Assignment.course_id == c.id,
+                Assignment.due_at > now
+            ).order_by(Assignment.due_at.asc()).first()
 
-            # Get next upcoming assignment
-            next_asgn = _next_assignment(c["id"])
+            next_asgn = None
+            if next_asgn_obj:
+                next_asgn = {
+                    "name": next_asgn_obj.name,
+                    "due_at": next_asgn_obj.due_at.isoformat() if next_asgn_obj.due_at else None,
+                    "points": next_asgn_obj.points_possible
+                }
 
             results.append({
-                "id": c["id"],
-                "name": c.get("name", "Unnamed Course"),
-                "code": code,
-                "grade": grade,
-                "term": term_name,
+                "id": c.id,
+                "name": c.name,
+                "code": c.code,
+                "grade": c.grade,
+                "term": c.term,
                 "next_assignment": next_asgn,
             })
         return results
@@ -115,22 +89,17 @@ def get_courses():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/announcements")
-def get_announcements():
+def get_announcements(db: Session = Depends(get_db)):
     try:
-        courses = canvas_api.fetch_courses()
-        course_ids = [c["id"] for c in courses if "id" in c]
-        if not course_ids:
-            return []
-        
-        raw_announcements = canvas_api.fetch_announcements(course_ids)
+        announcements = db.query(Announcement).order_by(Announcement.posted_at.desc()).all()
         formatted = []
-        for a in raw_announcements:
+        for a in announcements:
             formatted.append({
-                "id": a["id"],
-                "course": a.get("context_code", ""),
-                "title": a.get("title", ""),
-                "date": a.get("posted_at", ""),
-                "content": clean_html(a.get("message", ""))
+                "id": a.id,
+                "course": f"Course_{a.course_id}",
+                "title": a.title,
+                "date": a.posted_at.isoformat() if a.posted_at else None,
+                "content": clean_html(a.message)
             })
         return formatted
     except Exception as e:
@@ -141,15 +110,18 @@ class SummarizeRequest(BaseModel):
 
 @app.post("/api/announcements/summarize")
 def summarize_announcement(req: SummarizeRequest):
-    if not llm:
-        raise HTTPException(status_code=500, detail="Gemini LLM not initialized")
+    # Note: We still use Gemini live for summarization as it's a dynamic AI task
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.prompts import PromptTemplate
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key, temperature=0.2)
     
     prompt = PromptTemplate.from_template(
         "Summarize the following class announcement into 2-3 concise bullet points. "
         "Ignore greetings and sign-offs. Output ONLY the bullet points, starting each with a hyphen.\n\n"
         "Announcement:\n{content}"
     )
-    
     chain = prompt | llm
     
     try:
@@ -158,8 +130,6 @@ def summarize_announcement(req: SummarizeRequest):
         return {"summary": points}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-import rag
 
 class ChatRequest(BaseModel):
     message: str
@@ -176,28 +146,29 @@ class OptimizeRequest(BaseModel):
     major_courses: List[str]
 
 @app.post("/api/optimizer")
-def optimize_workflow(req: OptimizeRequest):
+def optimize_workflow(req: OptimizeRequest, db: Session = Depends(get_db)):
+    # Optimizer now uses cached assignments from DB
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.prompts import PromptTemplate
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key, temperature=0.2)
+
     try:
-        courses = canvas_api.fetch_courses()
-        course_ids = [c["id"] for c in courses if "id" in c]
+        now = datetime.utcnow()
+        assignments = db.query(Assignment).filter(Assignment.due_at > now).all()
         
         all_assignments = []
-        for cid in course_ids:
-            try:
-                assignments = canvas_api.fetch_assignments(cid)
-                for a in assignments:
-                    if "due_at" in a and a["due_at"]:
-                        all_assignments.append({
-                            "name": a.get("name"),
-                            "course_id": cid,
-                            "points": a.get("points_possible"),
-                            "due_at": a.get("due_at")
-                        })
-            except:
-                pass
+        for a in assignments:
+            all_assignments.append({
+                "name": a.name,
+                "course_id": a.course_id,
+                "points": a.points_possible,
+                "due_at": a.due_at.isoformat() if a.due_at else None
+            })
                 
         if not all_assignments:
-            return {"schedule": "No upcoming assignments found."}
+            return {"schedule": "No upcoming assignments found in the cache."}
             
         prompt = PromptTemplate.from_template(
             "You are a student workflow optimizer. Given the following assignments, "
@@ -216,6 +187,21 @@ def optimize_workflow(req: OptimizeRequest):
         return {"schedule": response.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/sync")
+def trigger_sync():
+    """Manually trigger a data refresh from Canvas."""
+    try:
+        sync.sync_all()
+        return {"status": "success", "message": "Database sync completed."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/sync/status")
+def get_sync_status(db: Session = Depends(get_db)):
+    """Check when the last successful sync occurred."""
+    meta = db.query(SyncMeta).all()
+    return {m.key: m.last_sync.isoformat() for m in meta}
 
 if __name__ == "__main__":
     import uvicorn

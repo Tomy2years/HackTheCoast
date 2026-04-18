@@ -1,31 +1,40 @@
-import React, { useState } from 'react';
-import { Send, Bot, User, Sun, Zap, AlertTriangle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Bot, User, Sun, Zap, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { getCanvasAPI } from '../lib/canvas';
+import { useData } from '../lib/DataContext';
 
 export default function ChatView() {
-  const [messages, setMessages] = useState([]);
+  const { chatMessages: messages, addChatMessage, clearChat } = useData();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom on new message
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-
+    
     const userMessage = input;
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    addChatMessage('user', userMessage);
     setInput('');
     setIsLoading(true);
-
+    
     try {
       const canvasApi = getCanvasAPI();
       const response = await canvasApi.fetch('/chat', {
         method: 'POST',
         body: JSON.stringify({ message: userMessage })
       });
-      setMessages(prev => [...prev, { role: 'ai', content: response.response }]);
+      addChatMessage('ai', response.response);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'ai', content: `Error: ${err.message}` }]);
+      addChatMessage('ai', `Error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -37,12 +46,26 @@ export default function ChatView() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] animate-in fade-in duration-500">
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-6 flex flex-col items-center"
+      >
+        <div className="w-full max-w-4xl flex justify-end mb-4">
+          {messages.length > 0 && (
+            <button 
+              onClick={clearChat}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear Conversation
+            </button>
+          )}
+        </div>
+        
         {messages.length === 0 ? (
           <div className="w-full max-w-4xl mt-2 flex flex-col items-center justify-center">
             <h2 className="text-3xl font-bold text-white mb-8">Portrait AI</h2>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-center">
               {/* Examples Column */}
               <div className="space-y-3 flex flex-col">

@@ -10,6 +10,7 @@ export function DataProvider({ children }) {
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [coursesError, setCoursesError] = useState(null);
   const [announcementsError, setAnnouncementsError] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -30,16 +31,11 @@ export function DataProvider({ children }) {
     try {
       setAnnouncementsLoading(true);
       setAnnouncementsError(null);
-      const canvasApi = getCanvasAPI();
-      const coursesData = await canvasApi.getCourses();
-      const activeCourseIds = coursesData.map(c => c.id);
-
-      if (activeCourseIds.length === 0) {
-        setAnnouncements([]);
-        return;
-      }
-
-      const raw = await canvasApi.getAnnouncements(activeCourseIds);
+      
+      const res = await fetch('/api/announcements');
+      if (!res.ok) throw new Error(`Failed to load announcements (${res.status})`);
+      const raw = await res.json();
+      
       const formatted = raw.map(a => ({
         ...a,
         date: new Date(a.date).toLocaleDateString(),
@@ -51,6 +47,14 @@ export function DataProvider({ children }) {
       setAnnouncementsLoading(false);
     }
   }, []);
+
+  const addChatMessage = (role, content) => {
+    setChatMessages(prev => [...prev, { role, content }]);
+  };
+
+  const clearChat = () => {
+    setChatMessages([]);
+  };
 
   // Fetch everything once on mount
   useEffect(() => {
@@ -65,6 +69,9 @@ export function DataProvider({ children }) {
     announcementsLoading,
     coursesError,
     announcementsError,
+    chatMessages,
+    addChatMessage,
+    clearChat,
     refreshCourses: fetchCourses,
     refreshAnnouncements: fetchAnnouncements,
   };
