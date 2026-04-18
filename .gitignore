@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+*.db
+__pycache__/
+.venv/
+server/__pycache__/
+server/portrait.db

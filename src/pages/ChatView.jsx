@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
-import { Send, Bot, User, Sun, Zap, AlertTriangle } from 'lucide-react';
+import { Send, Bot, User, Sun, Zap, AlertTriangle, Loader2 } from 'lucide-react';
+import { getCanvasAPI } from '../lib/canvas';
 
 export default function ChatView() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    
-    setMessages(prev => [...prev, { role: 'user', content: input }]);
-    
-    // Mock AI response
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'ai', content: `I'm analyzing your request regarding "${input}". As a prototype, I don't have real backend capabilities yet, but I can pretend to fetch your syllabus or calculate your scores!` }]);
-    }, 1000);
-    
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input;
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInput('');
+    setIsLoading(true);
+
+    try {
+      const canvasApi = getCanvasAPI();
+      const response = await canvasApi.fetch('/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: userMessage })
+      });
+      setMessages(prev => [...prev, { role: 'ai', content: response.response }]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'ai', content: `Error: ${err.message}` }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleExampleClick = (text) => {
@@ -26,11 +38,11 @@ export default function ChatView() {
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] animate-in fade-in duration-500">
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-        
+
         {messages.length === 0 ? (
           <div className="w-full max-w-4xl mt-2 flex flex-col items-center justify-center">
             <h2 className="text-3xl font-bold text-white mb-8">Portrait AI</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-center">
               {/* Examples Column */}
               <div className="space-y-3 flex flex-col">
@@ -110,8 +122,8 @@ export default function ChatView() {
               placeholder="Ask Portrait AI about your classes, deadlines, or grades..."
               className="w-full bg-neutral-800/90 border border-neutral-700 rounded-2xl py-4 pl-6 pr-14 text-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner backdrop-blur-md"
             />
-            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-colors disabled:opacity-50" disabled={!input.trim()}>
-              <Send className="w-5 h-5" />
+            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-colors disabled:opacity-50" disabled={!input.trim() || isLoading}>
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </form>
           <div className="text-center mt-3 text-xs text-neutral-500">
