@@ -75,96 +75,92 @@ export default function CoursesView() {
         {courses.map((course) => (
           <div
             key={course.id}
-            className="bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-sm group hover:border-blue-900/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5"
+            className="bg-[#121212] border border-neutral-800 rounded-3xl overflow-hidden group hover:border-blue-900/50 transition-all duration-300 shadow-2xl"
           >
-            <div className="p-6">
+            <div className="p-8">
               {/* Header: icon + grade */}
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-500 flex items-center justify-center font-bold text-lg border border-blue-500/20">
-                  {(course.code || '??').substring(0, 2)}
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-blue-900/20 text-blue-500 flex items-center justify-center font-bold text-xl border border-blue-500/10">
+                  {(course.code || course.name || '??').substring(0, 2).toUpperCase()}
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-bold ${gradeColor(course.grade)}`}>
+                  <div className={`text-4xl font-bold tracking-tight ${gradeColor(course.grade)}`}>
                     {course.grade !== null && course.grade !== undefined
-                      ? `${Math.round(course.grade * 10) / 10}%`
+                      ? `${Math.round(course.grade)}%`
                       : '—'}
                   </div>
-                  <div className="text-xs text-neutral-500">Current Grade</div>
+                  <div className="text-sm text-neutral-500 font-medium mt-1">Current Grade</div>
                 </div>
               </div>
 
               {/* Course name + code */}
-              <h3 className="text-xl font-bold text-white mb-1 truncate" title={course.name}>
-                {course.name.replace(/\s*-\s*\d{5}$/, '')}
-              </h3>
-              <p className="text-sm text-neutral-400 font-mono mb-1">{course.code}</p>
-              {course.term && (
-                <p className="text-xs text-neutral-500 mb-5">{course.term}</p>
-              )}
-              {!course.term && <div className="mb-5" />}
+              <div className="mb-6">
+                <h3 className="text-2xl font-black text-white leading-tight truncate mb-1" title={course.code}>
+                  {course.code || course.name}
+                </h3>
+                <p className="text-sm text-neutral-400 font-medium tracking-wide truncate mb-1 uppercase opacity-80">
+                  {course.name}
+                </p>
+                {course.term && (
+                  <p className="text-sm text-neutral-500 font-medium">{course.term}</p>
+                )}
+              </div>
 
               {/* Info rows */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-5 mb-8">
                 {/* Grade bar */}
-                {course.grade !== null && course.grade !== undefined && (
-                  <div>
-                    <div className="flex justify-between text-xs text-neutral-400 mb-1.5">
-                      <span>Grade Progress</span>
-                      <span className={gradeColor(course.grade)}>{Math.round(course.grade)}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-1000 ${
-                          course.grade >= 90
-                            ? 'bg-green-500'
-                            : course.grade >= 80
-                            ? 'bg-blue-500'
-                            : course.grade >= 70
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min(course.grade, 100)}%` }}
-                      />
-                    </div>
+                <div>
+                  <div className="flex justify-between text-sm font-medium text-neutral-400 mb-2">
+                    <span>Grade Progress</span>
+                    <span className={gradeColor(course.grade)}>{Math.round(course.grade || 0)}%</span>
                   </div>
-                )}
+                  <div className="w-full h-2.5 bg-neutral-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ${
+                        course.grade >= 90
+                          ? 'bg-green-500'
+                          : course.grade >= 80
+                          ? 'bg-blue-500'
+                          : course.grade >= 70
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min(course.grade || 0, 100)}%` }}
+                    />
+                  </div>
+                </div>
 
                 {/* Next assignment */}
-                {course.next_assignment ? (
-                  <div className="flex items-start gap-3 text-sm">
-                    <Clock className="w-4 h-4 text-neutral-500 mt-0.5 shrink-0" />
+                <div className="flex items-center gap-3 py-1">
+                  <Clock className="w-5 h-5 text-neutral-500 shrink-0" />
+                  {course.next_assignment ? (
                     <div className="min-w-0">
-                      <span className="text-neutral-300 block truncate">{course.next_assignment.name}</span>
-                      <span className="text-xs text-neutral-500">
-                        {formatDueDate(course.next_assignment.due_at)}
-                        {course.next_assignment.points != null && ` · ${course.next_assignment.points} pts`}
+                      <span className="text-neutral-300 text-sm block truncate font-medium italic">
+                        {course.next_assignment.name}
                       </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Clock className="w-4 h-4 text-neutral-500" />
-                    <span className="text-neutral-500 italic">No upcoming assignments</span>
-                  </div>
-                )}
+                  ) : (
+                    <span className="text-neutral-500 text-sm italic font-medium">No upcoming assignments</span>
+                  )}
+                </div>
 
                 {/* Syllabus status */}
-                <div className="flex items-center gap-3 text-sm">
-                  <FileText className="w-4 h-4 text-neutral-500" />
-                  <span className="text-neutral-300">Syllabus Indexed</span>
-                  <span className="ml-auto text-green-500 text-xs bg-green-500/10 px-2 py-0.5 rounded">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-neutral-500 shrink-0" />
+                  <span className="text-neutral-300 text-sm font-medium">Syllabus Indexed</span>
+                  <span className="ml-auto text-green-500 text-[10px] font-bold bg-green-500/10 px-3 py-1 rounded-md border border-green-500/20 uppercase tracking-wider">
                     Ready
                   </span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium py-2 rounded-xl transition-colors">
+              <div className="flex gap-3">
+                <button className="flex-1 bg-[#003870] hover:bg-[#004a94] text-white text-base font-bold py-3.5 rounded-2xl transition-all shadow-lg active:scale-[0.98]">
                   Ask AI About Class
                 </button>
-                <button className="w-10 h-10 bg-neutral-800 hover:bg-neutral-700 rounded-xl flex items-center justify-center transition-colors">
-                  <ExternalLink className="w-4 h-4 text-neutral-400" />
+                <button className="w-14 h-14 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-2xl flex items-center justify-center transition-all border border-neutral-700/30">
+                  <ExternalLink className="w-5 h-5" />
                 </button>
               </div>
             </div>
