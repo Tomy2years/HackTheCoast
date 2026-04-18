@@ -33,52 +33,52 @@ export default function ChatView() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-center">
               {/* Examples Column */}
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <div className="flex flex-col items-center gap-1 mb-4">
                   <Sun className="w-5 h-5 text-white" />
                   <h3 className="text-base font-medium text-white">Examples</h3>
                 </div>
-                <button onClick={() => handleExampleClick("Calculate the minimum score I need on my next CS101 exam to keep an A")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors">
-                  "Calculate the minimum score I need on my next CS101 exam to keep an A" &rarr;
+                <button onClick={() => handleExampleClick("Calculate the lowest score I need on my next CS37 exam to keep an A")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors flex-1 flex items-center justify-center text-center">
+                  "Calculate the lowest score I need on my next CS37 exam to keep an A" &rarr;
                 </button>
-                <button onClick={() => handleExampleClick("Summarize the latest announcement from my History class")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors">
+                <button onClick={() => handleExampleClick("Summarize the latest announcement from my History class")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors flex-1 flex items-center justify-center text-center">
                   "Summarize the latest announcement from my History class" &rarr;
                 </button>
-                <button onClick={() => handleExampleClick("Based on my syllabi, what should I study tonight?")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors">
+                <button onClick={() => handleExampleClick("Based on my syllabi, what should I study tonight?")} className="w-full p-3 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50 rounded-lg text-xs text-neutral-300 transition-colors flex-1 flex items-center justify-center text-center">
                   "Based on my syllabi, what should I study tonight?" &rarr;
                 </button>
               </div>
 
               {/* Capabilities Column */}
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <div className="flex flex-col items-center gap-1 mb-4">
                   <Zap className="w-5 h-5 text-white" />
                   <h3 className="text-base font-medium text-white">Capabilities</h3>
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   Automatically syncs and indexes all your course syllabi via Canvas
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   Optimizes your study workflow based on assignment weights and deadlines
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   Generates custom practice material using RAG on your specific class files
                 </div>
               </div>
 
               {/* Limitations Column */}
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <div className="flex flex-col items-center gap-1 mb-4">
                   <AlertTriangle className="w-5 h-5 text-white" />
                   <h3 className="text-base font-medium text-white">Limitations</h3>
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   May occasionally provide incorrect information if a syllabus is outdated
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   Cannot submit assignments on your behalf (yet)
                 </div>
-                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300">
+                <div className="w-full p-3 bg-neutral-800/30 border border-neutral-700/30 rounded-lg text-xs text-neutral-300 flex-1 flex items-center justify-center text-center">
                   Knowledge is limited to the documents uploaded to your Canvas portal
                 </div>
               </div>

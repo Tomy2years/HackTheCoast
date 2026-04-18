@@ -21,14 +21,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 text-neutral-900 selection:bg-blue-500/50">
+    <div class="min-h-screen bg-neutral-950 text-white selection:bg-blue-500/50">
       <div className="relative z-10 flex">
         <Navigation 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
         />
         
-        <main className="flex-1 min-h-screen transition-all duration-300">
+        <main className="flex-1 transition-all duration-300">
           <div className="max-w-6xl mx-auto p-12 pl-72">
             {renderTab()}
           </div>

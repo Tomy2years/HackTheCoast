@@ -53,6 +53,11 @@ export const mockAnnouncements = [
 ];
 
 export const mockCalendarEvents = [
-  { id: 1, title: 'CS101 Project 1 Due', date: '2023-10-25', type: 'deadline' },
-  { id: 2, title: 'Start MATH102 Studying', date: '2023-10-23', type: 'start_time' },
+  { id: 1, title: 'CS101 Project 1 Due', date: '2023-10-25', time: '23:59', type: 'deadline' },
+  { id: 2, title: 'Start MATH102 Studying', date: '2023-10-23', time: '18:00', type: 'start_time' },
+  { id: 3, title: 'HIST201 Reading', date: '2023-10-24', time: '14:00', type: 'start_time' },
+  { id: 4, title: 'MATH102 Midterm', date: '2023-10-28', time: '10:00', type: 'deadline' },
+  { id: 5, title: 'CS101 Office Hours', date: '2023-10-23', time: '10:00', type: 'event' },
+  { id: 6, title: 'Group meeting for HIST201', date: '2023-10-26', time: '11:00', type: 'event' },
+  { id: 7, title: 'Review lecture notes for MATH102', date: '2023-10-22', time: '16:00', type: 'start_time' },
 ];

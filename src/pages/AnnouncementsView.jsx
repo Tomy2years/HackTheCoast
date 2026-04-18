@@ -4,9 +4,14 @@ import { mockAnnouncements } from '../data/mockData';
 
 export default function AnnouncementsView() {
   const [summarizedId, setSummarizedId] = useState(null);
+  const [readAnnouncements, setReadAnnouncements] = useState([]);
 
   const handleSummarize = (id) => {
     setSummarizedId(summarizedId === id ? null : id);
+  };
+
+  const handleMarkAsRead = (id) => {
+    setReadAnnouncements((prev) => [...prev, id]);
   };
 
   return (
@@ -22,11 +27,13 @@ export default function AnnouncementsView() {
       </div>
 
       <div className="space-y-4">
-        {mockAnnouncements.map((announcement) => {
+        {mockAnnouncements
+          .filter((announcement) => !readAnnouncements.includes(announcement.id))
+          .map((announcement) => {
           const isSummarized = summarizedId === announcement.id;
           
           return (
-            <div key={announcement.id} className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 backdrop-blur-sm transition-colors hover:border-neutral-700">
+            <div key={announcement.id} className="bg-gradient-to-br from-white to-gray-100 border border-gray-200 rounded-2xl p-6 shadow-md transition-all hover:shadow-lg">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <span className="bg-blue-600/20 text-blue-500 text-xs font-bold px-2 py-1 rounded">
@@ -36,26 +43,34 @@ export default function AnnouncementsView() {
                     <Bell className="w-3 h-3" /> {announcement.date}
                   </span>
                 </div>
-                <button 
-                  onClick={() => handleSummarize(announcement.id)}
-                  className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
-                    isSummarized 
-                      ? 'bg-blue-600 text-white border-blue-500' 
-                      : 'bg-neutral-800 text-blue-400 border-blue-900/50 hover:bg-neutral-700'
-                  }`}
-                >
-                  <Sparkles className="w-3 h-3" />
-                  {isSummarized ? 'Show Original' : 'AI Summarize'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleSummarize(announcement.id)}
+                    className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
+                      isSummarized 
+                        ? 'bg-blue-600 text-white border-blue-500' 
+                        : 'bg-gray-200 text-blue-600 border-gray-300 hover:bg-gray-300'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isSummarized ? 'Show Original' : 'AI Summarize'}
+                  </button>
+                  <button 
+                    onClick={() => handleMarkAsRead(announcement.id)}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors border bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
               
-              <h3 className="text-xl font-bold text-white mb-2">{announcement.title}</h3>
+              <h3 className="text-xl font-bold text-blue-900 mb-2">{announcement.title}</h3>
               
               <div className="relative">
                 {isSummarized ? (
                   <div className="bg-blue-500/10 border-l-2 border-blue-500 pl-4 py-2 mt-4 animate-in fade-in slide-in-from-top-2">
-                    <p className="text-blue-200 text-sm font-medium">✨ AI Summary:</p>
-                    <ul className="list-disc pl-4 mt-2 text-neutral-300 text-sm space-y-1">
+                    <p className="text-blue-800 text-sm font-medium">✨ AI Summary:</p>
+                    <ul className="list-disc pl-4 mt-2 text-neutral-700 text-sm space-y-1">
                       {announcement.id === 1 && (
                         <>
                           <li>Midterm format changed to open notes/book.</li>
@@ -79,7 +94,7 @@ export default function AnnouncementsView() {
                     </ul>
                   </div>
                 ) : (
-                  <p className="text-neutral-300 leading-relaxed">
+                  <p className="text-blue-900 leading-relaxed">
                     {announcement.content}
                   </p>
                 )}
