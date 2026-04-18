@@ -18,10 +18,10 @@ export default function AnnouncementsView() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold mb-2 text-neutral-900">Automated Announcements</h2>
-          <p className="text-neutral-600">Long announcements summarized instantly by AI.</p>
+          <h2 className="text-3xl font-bold mb-2">Automated Announcements</h2>
+          <p className="text-neutral-400">Long announcements summarized instantly by AI.</p>
         </div>
-        <button className="bg-white hover:bg-gray-50 text-neutral-700 text-sm px-4 py-2 rounded-lg border border-gray-200 shadow-sm transition-colors flex items-center gap-2">
+        <button className="bg-neutral-800 hover:bg-neutral-700 text-sm px-4 py-2 rounded-lg border border-neutral-700 transition-colors flex items-center gap-2">
           <Filter className="w-4 h-4" /> Filter
         </button>
       </div>
@@ -33,14 +33,14 @@ export default function AnnouncementsView() {
           const isSummarized = summarizedId === announcement.id;
           
           return (
-            <div key={announcement.id} className="bg-gradient-to-r from-white via-white to-transparent border-l-4 border-blue-600 rounded-r-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div key={announcement.id} className="bg-gradient-to-br from-white to-gray-100 border border-gray-200 rounded-2xl p-6 shadow-md transition-all hover:shadow-lg">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <span className="bg-blue-600/20 text-blue-500 text-xs font-bold px-2 py-1 rounded">
                     {announcement.course}
                   </span>
-                  <span className="text-neutral-500 text-sm flex items-center gap-1 font-medium">
-                    <Bell className="w-3 h-3 text-blue-500" /> {announcement.date}
+                  <span className="text-neutral-500 text-sm flex items-center gap-1">
+                    <Bell className="w-3 h-3" /> {announcement.date}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -48,8 +48,8 @@ export default function AnnouncementsView() {
                     onClick={() => handleSummarize(announcement.id)}
                     className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full transition-colors border ${
                       isSummarized 
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-200' 
-                        : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'
+                        ? 'bg-blue-600 text-white border-blue-500' 
+                        : 'bg-gray-200 text-blue-600 border-gray-300 hover:bg-gray-300'
                     }`}
                   >
                     <Sparkles className="w-3 h-3" />
@@ -68,10 +68,8 @@ export default function AnnouncementsView() {
               
               <div className="relative">
                 {isSummarized ? (
-                  <div className="bg-blue-50 border-l-2 border-blue-400 pl-4 py-3 mt-4 animate-in fade-in slide-in-from-top-2 rounded-r-lg">
-                    <p className="text-blue-700 text-sm font-bold flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> AI Summary:
-                    </p>
+                  <div className="bg-blue-500/10 border-l-2 border-blue-500 pl-4 py-2 mt-4 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-blue-800 text-sm font-medium">✨ AI Summary:</p>
                     <ul className="list-disc pl-4 mt-2 text-neutral-700 text-sm space-y-1">
                       {announcement.id === 1 && (
                         <>
@@ -96,7 +94,7 @@ export default function AnnouncementsView() {
                     </ul>
                   </div>
                 ) : (
-                  <p className="text-neutral-700 leading-relaxed">
+                  <p className="text-blue-900 leading-relaxed">
                     {announcement.content}
                   </p>
                 )}

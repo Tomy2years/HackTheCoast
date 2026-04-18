@@ -34,11 +34,11 @@ const WeeklyView = ({ events }) => {
   const getEventColor = (type) => {
     switch (type) {
       case 'deadline':
-        return 'bg-red-100 border-red-200 text-red-700 font-medium';
+        return 'bg-red-500/20 border-red-500/30 text-red-300';
       case 'start_time':
-        return 'bg-blue-100 border-blue-200 text-blue-700 font-medium';
+        return 'bg-blue-500/20 border-blue-500/30 text-blue-300';
       default:
-        return 'bg-neutral-100 border-neutral-200 text-neutral-700 font-medium';
+        return 'bg-neutral-500/20 border-neutral-500/30 text-neutral-300';
     }
   };
 
@@ -48,7 +48,7 @@ const WeeklyView = ({ events }) => {
       {/* Time column */}
       <div className="col-span-1">
         {hours.map(hour => (
-          <div key={hour} className="h-16 border-b border-blue-200 p-2 text-right text-xs font-medium text-neutral-500">
+          <div key={hour} className="h-16 border-b border-neutral-800/50 p-2 text-right text-xs text-neutral-500">
             {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
           </div>
         ))}
@@ -56,9 +56,9 @@ const WeeklyView = ({ events }) => {
 
       {/* Day columns */}
       {weekDays.map((day, i) => (
-        <div key={i} className="col-span-1 border-r border-blue-200">
+        <div key={i} className="col-span-1 border-r border-neutral-800/50">
           {hours.map(hour => (
-            <div key={hour} className="h-16 border-b border-blue-200 p-1 relative hover:bg-blue-50/30 transition-colors">
+            <div key={hour} className="h-16 border-b border-neutral-800/50 p-1 relative">
               {getEventForHour(day, hour) && (
                 <div className={`absolute inset-0 m-1 rounded p-1 text-[10px] truncate ${getEventColor(getEventForHour(day, hour).type)}`}>
                   {getEventForHour(day, hour).title}
