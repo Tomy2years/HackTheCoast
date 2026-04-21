@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Sun, Zap, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import { getCanvasAPI } from '../lib/canvas';
 import { useData } from '../lib/DataContext';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatView() {
-  const { chatMessages: messages, addChatMessage, clearChat } = useData();
+  const { chatMessages: messages, addChatMessage, clearChat, initialChatQuery, setInitialChatQuery } = useData();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
@@ -16,12 +17,10 @@ export default function ChatView() {
     }
   }, [messages]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (text) => {
+    if (!text.trim() || isLoading) return;
     
-    const userMessage = input;
-    addChatMessage('user', userMessage);
+    addChatMessage('user', text);
     setInput('');
     setIsLoading(true);
     
@@ -29,7 +28,7 @@ export default function ChatView() {
       const canvasApi = getCanvasAPI();
       const response = await canvasApi.fetch('/chat', {
         method: 'POST',
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({ message: text })
       });
       addChatMessage('ai', response.response);
     } catch (err) {
@@ -38,6 +37,22 @@ export default function ChatView() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const hasSentInitialQuery = useRef(false);
+
+  useEffect(() => {
+    if (initialChatQuery && !hasSentInitialQuery.current) {
+      hasSentInitialQuery.current = true;
+      const query = initialChatQuery;
+      setInitialChatQuery('');
+      sendMessage(query);
+    }
+  }, [initialChatQuery]);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    await sendMessage(input);
   };
 
   const handleExampleClick = (text) => {
@@ -127,7 +142,18 @@ export default function ChatView() {
                   {msg.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-blue-500" />}
                 </div>
                 <div className={`rounded-3xl p-5 text-lg leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-neutral-800/80 text-neutral-200 border border-neutral-700 backdrop-blur-sm'}`}>
-                  {msg.content}
+                  <ReactMarkdown 
+                    components={{
+                      p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1" {...props} />,
+                      li: ({node, ...props}) => <li {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-bold text-white/90" {...props} />,
+                      a: ({node, ...props}) => <a className="text-blue-400 hover:underline" {...props} />
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}

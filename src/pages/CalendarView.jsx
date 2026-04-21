@@ -1,10 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
-import { mockCalendarEvents } from '../data/mockData';
-import WeeklyView from '../components/WeeklyView';
+import { useData } from '../lib/DataContext';
 
 export default function CalendarView() {
-  const [view, setView] = useState('monthly');
+  const { assignments } = useData();
+  const [filter, setFilter] = useState('both');
+
+  const events = [];
+  assignments.forEach(a => {
+    if (a.due_at && (filter === 'due' || filter === 'both')) {
+      const d = new Date(a.due_at);
+      events.push({
+        id: a.id + '-due',
+        title: `${a.course_code || ''} ${a.name} Due`.trim(),
+        date: a.due_at,
+        time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+        type: 'deadline',
+      });
+    }
+    if (a.start_at && (filter === 'start' || filter === 'both')) {
+      const d = new Date(a.start_at);
+      events.push({
+        id: a.id + '-start',
+        title: `Start ${a.course_code || ''} ${a.name}`.trim(),
+        date: a.start_at,
+        time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+        type: 'start_time',
+      });
+    }
+  });
+
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+
+  const gridCells = Array.from({ length: 35 }); // Keep it 5 weeks for consistent UI or calculate dynamically
+
+  const startEventsUpcoming = assignments.filter(a => a.start_at && new Date(a.start_at) >= new Date(today.setHours(0,0,0,0))).sort((a,b) => new Date(a.start_at) - new Date(b.start_at)).slice(0, 3);
+  const upcomingDeadlines = assignments.filter(a => a.due_at && new Date(a.due_at) >= new Date(today.setHours(0,0,0,0))).sort((a,b) => new Date(a.due_at) - new Date(b.due_at)).slice(0, 3);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -16,21 +52,24 @@ export default function CalendarView() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-neutral-800 border border-neutral-700 p-1 rounded-lg">
             <button 
-              onClick={() => setView('monthly')}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${view === 'monthly' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-700/50'}`}
+              onClick={() => setFilter('both')}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${filter === 'both' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-700/50'}`}
             >
-              Monthly
+              All
             </button>
             <button 
-              onClick={() => setView('weekly')}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${view === 'weekly' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-700/50'}`}
+              onClick={() => setFilter('start')}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${filter === 'start' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-700/50'}`}
             >
-              Weekly
+              Start Dates
+            </button>
+            <button 
+              onClick={() => setFilter('due')}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${filter === 'due' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:bg-neutral-700/50'}`}
+            >
+              Due Dates
             </button>
           </div>
-          <button className="bg-neutral-800 hover:bg-neutral-700 text-sm px-4 py-2 rounded-lg border border-neutral-700 transition-colors">
-            Sync Canvas
-          </button>
         </div>
       </div>
 
@@ -40,35 +79,39 @@ export default function CalendarView() {
             <div key={day} className="py-3 text-sm font-medium text-neutral-400">{day}</div>
           ))}
         </div>
-        {view === 'monthly' ? (
-          <div className="grid grid-cols-7 grid-rows-5 h-[500px]">
-            {Array.from({ length: 35 }).map((_, i) => {
-              const date = i - 2; // Offset for demo
-              const isToday = date === 23;
-              return (
-                <div key={i} className={`border-b border-r border-neutral-800/50 p-2 ${isToday ? 'bg-blue-900/10' : ''}`}>
-                  <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-neutral-500'}`}>
-                    {date > 0 && date <= 31 ? date : ''}
-                  </span>
+        <div key={filter} className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] min-h-[500px]">
+          {gridCells.map((_, i) => {
+            const dateNum = i - firstDay + 1;
+            const isCurrentMonth = dateNum > 0 && dateNum <= daysInMonth;
+            const dateObj = isCurrentMonth ? new Date(currentYear, currentMonth, dateNum) : null;
+            const isToday = isCurrentMonth && dateObj?.toDateString() === new Date().toDateString();
+            
+            const dayEvents = isCurrentMonth ? events.filter(e => {
+              const matchesDate = new Date(e.date).toDateString() === dateObj.toDateString();
+              const matchesFilter = filter === 'both' ? true : (filter === 'due' ? e.type === 'deadline' : e.type === 'start_time');
+              return matchesDate && matchesFilter;
+            }) : [];
 
-                  {/* Mock Event injection */}
-                  {date === 23 && (
-                    <div className="mt-1 bg-blue-500/20 border border-blue-500/30 rounded p-1 text-[10px] text-blue-300 truncate">
-                      Start MATH102
+            return (
+              <div key={i} className={`border-b border-r border-neutral-800/50 p-2 min-h-[100px] ${isToday ? 'bg-blue-900/10' : ''}`}>
+                {isCurrentMonth ? (
+                  <>
+                    <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1 ${isToday ? 'bg-blue-600 text-white' : 'text-neutral-500'}`}>
+                      {dateNum}
+                    </span>
+                    <div className="space-y-1">
+                      {dayEvents.map(e => (
+                         <div key={e.id} className={`rounded p-1 text-[10px] break-words leading-tight ${e.type === 'deadline' ? 'bg-red-500/20 border border-red-500/30 text-red-300' : 'bg-blue-500/20 border border-blue-500/30 text-blue-300'}`}>
+                           {e.time} - {e.title}
+                         </div>
+                      ))}
                     </div>
-                  )}
-                  {date === 25 && (
-                    <div className="mt-1 bg-red-500/20 border border-red-500/30 rounded p-1 text-[10px] text-red-300 truncate">
-                      CS101 Due
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <WeeklyView events={mockCalendarEvents} />
-        )}
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -77,14 +120,16 @@ export default function CalendarView() {
             <Clock className="text-blue-500 w-5 h-5" /> Recommended Start Times
           </h3>
           <ul className="space-y-3">
-            <li className="flex justify-between items-center text-sm">
-              <span className="text-neutral-300">MATH102 Study</span>
-              <span className="text-blue-400 font-medium bg-blue-500/10 px-2 py-1 rounded">Today 6:00 PM</span>
-            </li>
-            <li className="flex justify-between items-center text-sm">
-              <span className="text-neutral-300">HIST201 Reading</span>
-              <span className="text-blue-400 font-medium bg-blue-500/10 px-2 py-1 rounded">Tomorrow 2:00 PM</span>
-            </li>
+            {startEventsUpcoming.length > 0 ? startEventsUpcoming.map((a, idx) => (
+              <li key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm gap-2">
+                <span className="text-neutral-300">{a.course_code} {a.name}</span>
+                <span className="text-blue-400 font-medium bg-blue-500/10 px-2 py-1 rounded w-fit">
+                  {new Date(a.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </li>
+            )) : (
+              <p className="text-neutral-500 italic text-sm">No upcoming starts.</p>
+            )}
           </ul>
         </div>
 
@@ -93,14 +138,16 @@ export default function CalendarView() {
             <AlertCircle className="text-red-500 w-5 h-5" /> Hard Deadlines
           </h3>
           <ul className="space-y-3">
-            <li className="flex justify-between items-center text-sm">
-              <span className="text-neutral-300">CS101 Project 1</span>
-              <span className="text-red-400 font-medium bg-red-500/10 px-2 py-1 rounded">Oct 25 11:59 PM</span>
-            </li>
-            <li className="flex justify-between items-center text-sm">
-              <span className="text-neutral-300">MATH102 Midterm</span>
-              <span className="text-red-400 font-medium bg-red-500/10 px-2 py-1 rounded">Oct 28 10:00 AM</span>
-            </li>
+            {upcomingDeadlines.length > 0 ? upcomingDeadlines.map((a, idx) => (
+              <li key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm gap-2">
+                <span className="text-neutral-300">{a.course_code} {a.name}</span>
+                <span className="text-red-400 font-medium bg-red-500/10 px-2 py-1 rounded w-fit">
+                  {new Date(a.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </li>
+            )) : (
+               <p className="text-neutral-500 italic text-sm">No upcoming deadlines.</p>
+            )}
           </ul>
         </div>
       </div>

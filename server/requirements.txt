@@ -7,3 +7,6 @@ langchain
 langchain-google-genai
 faiss-cpu
 pydantic
+sqlalchemy
+canvasapi
+pypdf

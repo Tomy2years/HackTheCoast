@@ -4,7 +4,7 @@ import { getCanvasAPI } from '../lib/canvas';
 import { useData } from '../lib/DataContext';
 
 export default function AnnouncementsView() {
-  const { announcements, announcementsLoading: loading, announcementsError: error, refreshAnnouncements } = useData();
+  const { announcements, courses, announcementsLoading: loading, announcementsError: error, refreshAnnouncements } = useData();
   const [summaries, setSummaries] = useState({});
   const [summarizingId, setSummarizingId] = useState(null);
   const [readAnnouncements, setReadAnnouncements] = useState([]);
@@ -82,7 +82,12 @@ export default function AnnouncementsView() {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <span className="bg-blue-600/20 text-blue-500 text-xs font-bold px-2 py-1 rounded">
-                    {announcement.course.replace('course_', 'Course ')}
+                    {(() => {
+                      const courseIdMatch = announcement.course.match(/\d+/);
+                      const courseId = courseIdMatch ? courseIdMatch[0] : null;
+                      const courseObj = courses.find(c => String(c.id) === String(courseId));
+                      return courseObj ? (courseObj.code || courseObj.name) : announcement.course.replace(/course_/i, 'Course ');
+                    })()}
                   </span>
                   <span className="text-neutral-500 text-sm flex items-center gap-1">
                     <Bell className="w-3 h-3" /> {announcement.date}

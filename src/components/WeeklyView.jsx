@@ -2,9 +2,9 @@
 import React from 'react';
 
 const WeeklyView = ({ events }) => {
-  const hours = Array.from({ length: 17 }, (_, i) => i + 7); // Starts at 7am, ends at midnight
+  const hours = Array.from({ length: 24 }, (_, i) => i); // Covers 12 AM to 11 PM
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date('2023-10-23T00:00:00'); // Mock today's date
+  const today = new Date();
 
   const getWeekDays = () => {
     const startOfWeek = new Date(today);
@@ -18,16 +18,11 @@ const WeeklyView = ({ events }) => {
 
   const weekDays = getWeekDays();
 
-  const getEventForHour = (day, hour) => {
-    const date = new Date(day);
-    const dateString = date.toISOString().split('T')[0];
-    const hourString = `${hour.toString().padStart(2, '0')}:00`;
-
-    return events.find(event => {
+  const getEventsForHour = (day, hour) => {
+    return events.filter(event => {
       const eventDate = new Date(event.date);
-      const eventDateString = eventDate.toISOString().split('T')[0];
       const eventHour = parseInt(event.time.split(':')[0]);
-      return eventDateString === dateString && eventHour === hour;
+      return eventDate.toDateString() === day.toDateString() && eventHour === hour;
     });
   };
 
@@ -57,15 +52,19 @@ const WeeklyView = ({ events }) => {
       {/* Day columns */}
       {weekDays.map((day, i) => (
         <div key={i} className="col-span-1 border-r border-neutral-800/50">
-          {hours.map(hour => (
-            <div key={hour} className="h-16 border-b border-neutral-800/50 p-1 relative">
-              {getEventForHour(day, hour) && (
-                <div className={`absolute inset-0 m-1 rounded p-1 text-[10px] truncate ${getEventColor(getEventForHour(day, hour).type)}`}>
-                  {getEventForHour(day, hour).title}
-                </div>
-              )}
-            </div>
-          ))}
+          {hours.map(hour => {
+            const hourEvents = getEventsForHour(day, hour);
+            return (
+              <div key={hour} className="h-16 border-b border-neutral-800/50 p-1 relative flex flex-col gap-1 overflow-y-auto">
+                {hourEvents.map((evt, idx) => (
+                  <div key={idx} className={`rounded p-1 text-[10px] sm:text-xs overflow-hidden leading-tight shrink-0 ${getEventColor(evt.type)}`}>
+                    <div className="font-semibold block sm:inline mr-1">{evt.time}</div>
+                    <div className="truncate inline">{evt.title}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>

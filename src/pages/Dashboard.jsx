@@ -18,7 +18,7 @@ function formatDueDate(isoString) {
 }
 
 export default function Dashboard() {
-  const { courses, coursesLoading } = useData();
+  const { courses, coursesLoading, aiSuggestions, suggestionsLoading } = useData();
 
   // Find courses with upcoming assignments, sorted by due date
   const coursesWithAssignments = courses
@@ -134,11 +134,22 @@ export default function Dashboard() {
               <Clock className="text-blue-500 w-5 h-5" />
               AI Suggestions
             </h3>
-            <p className="text-sm text-neutral-400 mb-3">Based on your recent syllabus uploads:</p>
-            <ul className="text-sm text-neutral-300 list-disc pl-4 space-y-2">
-              <li>Read chapters 4-5 of History before tomorrow's guest speaker.</li>
-              <li>Calculus homework extension means you can prioritize CS today.</li>
-            </ul>
+            <p className="text-sm text-neutral-400 mb-3">Based on your upcoming deadlines:</p>
+            {suggestionsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+              </div>
+            ) : (
+              <ul className="text-sm text-neutral-300 list-disc pl-4 space-y-2">
+                {aiSuggestions && aiSuggestions.length > 0 ? (
+                  aiSuggestions.map((suggestion, index) => (
+                    <li key={index}>{suggestion}</li>
+                  ))
+                ) : (
+                  <p className="text-neutral-500 italic">No suggestions available.</p>
+                )}
+              </ul>
+            )}
           </div>
         </div>
       </div>

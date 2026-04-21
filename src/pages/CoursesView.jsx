@@ -35,8 +35,8 @@ function gradeBg(grade) {
   return 'bg-red-500/10 border-red-500/20';
 }
 
-export default function CoursesView() {
-  const { courses, coursesLoading: loading, coursesError: error, refreshCourses } = useData();
+export default function CoursesView({ setActiveTab }) {
+  const { courses, coursesLoading: loading, coursesError: error, refreshCourses, setInitialChatQuery } = useData();
 
   if (loading) {
     return (
@@ -156,11 +156,13 @@ export default function CoursesView() {
 
               {/* Actions */}
               <div className="flex gap-3">
-                <button className="flex-1 bg-[#003870] hover:bg-[#004a94] text-white text-base font-bold py-3.5 rounded-2xl transition-all shadow-lg active:scale-[0.98]">
+                <button 
+                  onClick={() => {
+                    setInitialChatQuery(`What are my upcoming deadlines and what do I need to know for ${course.code || course.name}?`);
+                    if (setActiveTab) setActiveTab('chat');
+                  }}
+                  className="w-full bg-[#003870] hover:bg-[#004a94] text-white text-base font-bold py-3.5 rounded-2xl transition-all shadow-lg active:scale-[0.98]">
                   Ask AI About Class
-                </button>
-                <button className="w-14 h-14 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-2xl flex items-center justify-center transition-all border border-neutral-700/30">
-                  <ExternalLink className="w-5 h-5" />
                 </button>
               </div>
             </div>

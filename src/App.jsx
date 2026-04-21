@@ -14,7 +14,7 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'calendar': return <CalendarView />;
-      case 'courses': return <CoursesView />;
+      case 'courses': return <CoursesView setActiveTab={setActiveTab} />;
       case 'announcements': return <AnnouncementsView />;
       case 'chat': return <ChatView />;
       default: return <Dashboard />;

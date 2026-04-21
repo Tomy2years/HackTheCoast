@@ -6,7 +6,7 @@ from database import SessionLocal, Course, Assignment, Announcement, SyncMeta
 def _clean_course_code(raw_code: str) -> str:
     """Turn '202630_MATH4A_31264' into 'MATH 4A'."""
     import re
-    m = re.match(r"^\d+_([A-Z]+)(\d+\w*)_\d+$", raw_code or "")
+    m = re.match(r"^\d+_([A-Z]+)(\d+\w*)_[\d/]+$", raw_code or "")
     if m:
         dept, num = m.group(1), m.group(2)
         return f"{dept} {num}"
@@ -15,7 +15,7 @@ def _clean_course_code(raw_code: str) -> str:
 def _clean_course_name(name: str) -> str:
     """Remove trailing IDs like ' - 31288'."""
     import re
-    return re.sub(r"\s*-\s*\d{5}$", "", name or "")
+    return re.sub(r"\s*-\s*[\d/]+$", "", name or "")
 
 def sync_courses():
     db = SessionLocal()
@@ -31,6 +31,52 @@ def sync_courses():
             try:
                 syllabus_data = canvas_api.fetch_syllabus(course_id)
                 syllabus_body = syllabus_data.get("syllabus_body")
+                
+                if syllabus_body:
+                    import re, io
+                    import importlib
+                    importlib.invalidate_caches()
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(syllabus_body, "html.parser")
+                    for a_tag in soup.find_all("a", href=True):
+                        href = a_tag["href"]
+                        # Check for canvas files
+                        m = re.search(r"instructure\.com/.*?files/([0-9~]+)", href)
+                        if m:
+                            file_id = m.group(1)
+                            import requests
+                            import pypdf
+                            try:
+                                url = f"{canvas_api.get_base_url()}/files/{file_id}"
+                                res = requests.get(url, headers=canvas_api.get_headers())
+                                if res.status_code == 200:
+                                    file_data = res.json()
+                                    dl_url = file_data.get("url")
+                                    if dl_url:
+                                        dl_res = requests.get(dl_url)
+                                        if dl_res.status_code == 200 and b"%PDF" in dl_res.content[:5]:
+                                            pdf = pypdf.PdfReader(io.BytesIO(dl_res.content))
+                                            pdf_text = f"\n\n[Extracted from linked PDF: {file_data.get('display_name', 'document')}]\n"
+                                            for page in pdf.pages:
+                                                ext_str = page.extract_text()
+                                                if ext_str:
+                                                    pdf_text += ext_str + "\n"
+                                            syllabus_body += pdf_text
+                            except Exception as ex:
+                                with open("sync_error.log", "a") as f:
+                                    f.write(f"Failed to extract Canvas PDF {file_id}: {ex}\n")
+                                print(f"Failed to extract Canvas PDF {file_id}: {ex}")
+                        
+                        # Check for google docs
+                        elif "docs.google.com/document/d/" in href:
+                            import requests
+                            export_url = re.sub(r"/edit.*", "/export?format=txt", href)
+                            try:
+                                res = requests.get(export_url)
+                                if res.status_code == 200:
+                                    syllabus_body += f"\n\n[Extracted from linked Google Doc:]\n{res.text}"
+                            except Exception as ex:
+                                print(f"Failed to fetch Google doc: {ex}")
             except Exception as e:
                 print(f"Failed to fetch syllabus for course {course_id}: {e}")
 
@@ -55,6 +101,9 @@ def sync_courses():
             course.grade = grade
             course.term = rc.get("term", {}).get("name")
             course.syllabus = syllabus_body
+            if "MATH" in (course.code or "") and syllabus_body:
+                with open("sync_error.log", "a") as f:
+                    f.write(f"Saving MATH syllabus for course {course_id}. Length: {len(syllabus_body)}\n")
             course.updated_at = datetime.utcnow()
             
         db.commit()
